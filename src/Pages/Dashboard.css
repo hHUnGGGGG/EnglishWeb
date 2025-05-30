@@ -1,0 +1,66 @@
+.dashboard {
+    padding: 20px;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.user-fullname {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.topics-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.topic-button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: center;
+    width: 150px;
+}
+
+.topic-image {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.topic-button p {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.top-right-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-input {
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}

@@ -1,0 +1,35 @@
+.ninja-container {
+    position: fixed;
+    top: 50%;
+    right: -100px;
+    display: flex;
+    align-items: center;
+}
+
+.ninja {
+    width: 100px;
+    height: 100px;
+    background: url('../resource/image/OIP.png') no-repeat center/contain;
+    animation: ninjaRun 1s linear forwards;
+    z-index: 1000;
+}
+
+.ninja-trail {
+    position: absolute;
+    top: 50%;
+    right: 100px; /* Bắt đầu ngay sau ninja */
+    height: 20px;
+    width: 0px; /* Bắt đầu với chiều rộng bằng 0 */
+    background: linear-gradient(to left, rgb(0, 255, 42), rgba(0, 255, 42, 0));
+    transition: width 1s linear; /* Kéo dài dần khi ninja chạy */
+    z-index: 999;
+}
+
+@keyframes ninjaRun {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100vw); /* Chạy hết màn hình */
+    }
+}

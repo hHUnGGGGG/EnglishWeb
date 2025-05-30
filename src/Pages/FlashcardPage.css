@@ -1,0 +1,137 @@
+.flashcard-page {
+    padding: 20px;
+    text-align: center;
+}
+
+.flashcards-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+}
+
+.flashcard {
+    width: 250px !important;
+    height: 350px !important;
+    perspective: 1000px; /* Tạo hiệu ứng 3D cho flashcard */
+    cursor: pointer;
+}
+
+.flashcard-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.flashcard-inner.flipped {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front,
+.flashcard-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.flashcard-front {
+    background-color: red !important;
+    color: white !important;
+    font-size: 28px;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column; /* Sắp xếp các phần tử theo cột */
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+
+.flashcard-back {
+    background-color: #fff;
+    color: #333;
+    transform: rotateY(180deg);
+    flex-direction: column;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.flashcard-image {
+    width: 90% !important;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.flashcard-back p {
+    font-size: 16px;
+    margin: 0;
+    padding: 0 10px;
+}
+
+.flashcard-front h3 {
+    margin-bottom: 10px; /* Tạo khoảng cách bên dưới từ */
+    text-align: center;
+}
+
+.flashcard-front p {
+    font-size: 20px;
+    text-align: center;
+}
+
+.quiz-button {
+    padding: 8px 16px;
+    background-color: #007BFF;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.quiz-button:hover {
+    background-color: #0056b3;
+}
+
+.add-button {
+    margin-top: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.add-button:hover {
+    background-color: #45a049;
+}
+.speak-button {
+    margin-top: 8px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.speak-button:hover {
+    background-color: #45a049;
+}
+.flashcard-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+}
