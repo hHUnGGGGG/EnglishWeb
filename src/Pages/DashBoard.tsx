@@ -41,7 +41,6 @@ const Dashboard: React.FC = () => {
             .catch(err => console.error(err));
     }, []);
 
-    // Gọi API suggest từ vựng khi gõ chữ
     useEffect(() => {
         if (searchWord.trim() === "") {
             setSuggestions([]);
@@ -77,6 +76,14 @@ const Dashboard: React.FC = () => {
         navigate("/myLibrary");
     };
 
+    const handleStatisticsClick = () => {
+        navigate("/libraryStatistics");
+    };
+
+    const handleLeaderboardClick = () => {
+        navigate("/leaderboard");
+    };
+
     return (
         <div className="dashboard">
             <header className="dashboard-header">
@@ -90,7 +97,7 @@ const Dashboard: React.FC = () => {
                         <span>Đang tải thông tin người dùng...</span>
                     </div>
                 )}
-                <div className="top-right-controls" style={{ position: "relative" }}>
+                <div className="top-right-controls">
                     <input
                         type="text"
                         placeholder="Tra từ..."
@@ -102,32 +109,16 @@ const Dashboard: React.FC = () => {
                         }}
                         autoComplete="off"
                     />
-                    <button onClick={handleSearch}>Tra từ</button>
-                    <button onClick={handleMyLibraryClick}>My Library</button>
-
-                    {/* Gợi ý autocomplete */}
+                    <button className="button" onClick={handleSearch}>Tra từ</button>
+                    <button className="button" onClick={handleMyLibraryClick}>My Library</button>
+                    <button className="button" onClick={handleStatisticsClick}>Thống kê</button>
+                    <button className="button" onClick={handleLeaderboardClick}>Bảng Xếp Hạng</button>
+                    <button className="button" onClick={() => navigate("/miniGame")}>Mini Game</button>
                     {suggestions.length > 0 && (
-                        <ul
-                            style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                backgroundColor: "white",
-                                border: "1px solid #ccc",
-                                maxHeight: "200px",
-                                overflowY: "auto",
-                                zIndex: 1000,
-                                margin: 0,
-                                padding: 0,
-                                listStyle: "none",
-                                cursor: "pointer"
-                            }}
-                        >
+                        <ul className="autocomplete-list">
                             {suggestions.map((word, index) => (
                                 <li
                                     key={index}
-                                    style={{ padding: "8px" }}
                                     onClick={() => handleSelectSuggestion(word)}
                                 >
                                     {word}
@@ -147,7 +138,7 @@ const Dashboard: React.FC = () => {
                         onClick={() => handleTopicClick(topic.topicID)}
                     >
                         <img src={topic.imagePath} alt={topic.title} className="topic-image" />
-                        <p>{topic.title}</p>
+                        <p className="center-text">{topic.title}</p>
                     </button>
                 ))}
             </div>

@@ -10,41 +10,97 @@ interface Question {
     type: string;
 }
 
+// Hàm lấy userID an toàn từ localStorage
+function getUserIDFromLocalStorage(): number | null {
+    const userString = localStorage.getItem("user");
+    if (!userString) return null;
+
+    try {
+        const user = JSON.parse(userString);
+        return user.userID ?? null;
+    } catch {
+        return null;
+    }
+}
+
 const QuizPage: React.FC = () => {
     const { lessonID } = useParams<{ lessonID: string }>();
+    const userID = getUserIDFromLocalStorage();
+
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userAnswer, setUserAnswer] = useState("");
     const [correctCount, setCorrectCount] = useState(0);
     const [incorrectCount, setIncorrectCount] = useState(0);
     const [finished, setFinished] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        axios.get(`http://localhost:8080/question/allByLessonID`, {
-            params: { lessonID }
-        })
-            .then(res => setQuestions(res.data))
-            .catch(err => console.error("Lỗi tải câu hỏi:", err));
+        if (!lessonID) return;
+
+        setLoading(true);
+        axios
+            .get(`http://localhost:8080/question/allByLessonID`, {
+                params: { lessonID },
+            })
+            .then((res) => {
+                setQuestions(res.data);
+                setLoading(false);
+            })
+            .catch((err) => {
+                console.error("Lỗi tải câu hỏi:", err);
+                setError("Lỗi tải câu hỏi, vui lòng thử lại sau.");
+                setLoading(false);
+            });
     }, [lessonID]);
 
+    if (!userID) {
+        return <p>Vui lòng đăng nhập để làm bài quiz.</p>;
+    }
+
+    if (loading) {
+        return <p>Đang tải câu hỏi...</p>;
+    }
+
+    if (error) {
+        return <p>{error}</p>;
+    }
+
+    if (questions.length === 0) {
+        return <p>Không có câu hỏi cho bài học này.</p>;
+    }
+
+    const current = questions[currentIndex];
+
     const handleSubmit = (answer: string) => {
-        const current = questions[currentIndex];
+        if (!userID) return;
 
-        // Làm sạch dữ liệu trước khi so sánh
-        const cleanedAnswer = answer.trim().toLowerCase().replace(/[.,!?]$/, "");
-        const cleanedCorrect = current.correctAnswer.trim().toLowerCase();
+        axios
+            .post(`http://localhost:8080/question/checkAnswer`, null, {
+                params: {
+                    userID,
+                    questionID: current.questionID,
+                    userAnswer: answer.trim(),
+                },
+            })
+            .then((res) => {
+                const isCorrect = res.data === "correct";
 
-        const isCorrect = cleanedAnswer === cleanedCorrect;
+                if (isCorrect) setCorrectCount((c) => c + 1);
+                else setIncorrectCount((c) => c + 1);
 
-        if (isCorrect) setCorrectCount(c => c + 1);
-        else setIncorrectCount(c => c + 1);
-
-        if (currentIndex + 1 < questions.length) {
-            setCurrentIndex(i => i + 1);
-            setUserAnswer(""); // Reset kết quả
-        } else {
-            setFinished(true);
-        }
+                if (currentIndex + 1 < questions.length) {
+                    setCurrentIndex((i) => i + 1);
+                    setUserAnswer("");
+                } else {
+                    setFinished(true);
+                }
+            })
+            .catch((err) => {
+                console.error("Lỗi kiểm tra đáp án:", err);
+                alert("Lỗi kiểm tra đáp án, vui lòng thử lại.");
+            });
     };
 
     const handleListen = (text: string) => {
@@ -52,39 +108,6 @@ const QuizPage: React.FC = () => {
         utterance.lang = "en-US";
         speechSynthesis.speak(utterance);
     };
-
-    const handlePronunciation = () => {
-        if (!("webkitSpeechRecognition" in window)) {
-            alert("Trình duyệt không hỗ trợ nhận diện giọng nói.");
-            return;
-        }
-
-        const recognition = new (window as any).webkitSpeechRecognition();
-        recognition.lang = "en-US";
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onstart = () => {
-            console.log("Đang nghe...");
-        };
-
-        recognition.onresult = (event: any) => {
-            const spokenText = event.results[0][0].transcript.trim().toLowerCase().replace(/[.,!?]$/, "");
-            setUserAnswer(spokenText); // Gán kết quả đã xử lý
-        };
-
-        recognition.onerror = (event: any) => {
-            console.error("Lỗi nhận diện giọng nói:", event.error);
-        };
-
-        recognition.onend = () => {
-            console.log("Dừng nghe...");
-        };
-
-        recognition.start();
-    };
-
-    if (questions.length === 0) return <p>Đang tải câu hỏi...</p>;
 
     if (finished) {
         return (
@@ -96,27 +119,15 @@ const QuizPage: React.FC = () => {
         );
     }
 
-    const current = questions[currentIndex];
-
     const renderQuestion = () => {
         switch (current.type) {
             case "VI_TO_EN":
-                return (
-                    <>
-                        <p><strong>{current.questionText}</strong></p>
-                        <input
-                            type="text"
-                            value={userAnswer}
-                            onChange={(e) => setUserAnswer(e.target.value)}
-                        />
-                        <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
-                    </>
-                );
-
             case "FILL_IN_THE_BLANK":
                 return (
                     <>
-                        <p><strong>{current.questionText}</strong></p>
+                        <p>
+                            <strong>{current.questionText}</strong>
+                        </p>
                         <input
                             type="text"
                             value={userAnswer}
@@ -129,8 +140,12 @@ const QuizPage: React.FC = () => {
             case "LISTEN_AND_WRITE":
                 return (
                     <>
-                        <p><strong>Nghe và viết từ:</strong></p>
-                        <button onClick={() => handleListen(current.correctAnswer)}>🔊 Nghe</button>
+                        <p>
+                            <strong>Nghe và viết từ:</strong>
+                        </p>
+                        <button onClick={() => handleListen(current.correctAnswer)}>
+                            🔊 Nghe
+                        </button>
                         <input
                             type="text"
                             value={userAnswer}
@@ -143,17 +158,18 @@ const QuizPage: React.FC = () => {
             case "PRONUNCIATION":
                 return (
                     <>
-                        <p><strong>Phát âm đúng từ sau:</strong> {current.questionText}</p>
-                        <button
-                            onMouseDown={handlePronunciation}
-                            onTouchStart={handlePronunciation}
-                        >
-                            🎤 Nhấn giữ để nói
-                        </button>
+                        <p>
+                            <strong>Phát âm đúng từ sau:</strong> {current.questionText}
+                        </p>
                         <button onClick={() => handleListen(current.correctAnswer)}>
                             🔊 Nghe lại từ
                         </button>
-                        <p><strong>Phát âm của bạn:</strong> {userAnswer}</p>
+                        <input
+                            type="text"
+                            value={userAnswer}
+                            onChange={(e) => setUserAnswer(e.target.value)}
+                            placeholder="Nhập phát âm bạn nghe được"
+                        />
                         <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
                     </>
                 );
@@ -165,11 +181,17 @@ const QuizPage: React.FC = () => {
 
     return (
         <div className="quiz-page">
-            <h2>Câu hỏi {currentIndex + 1} / {questions.length}</h2>
-            <p><em>Loại: {current.type}</em></p>
+            <h2>
+                Câu hỏi {currentIndex + 1} / {questions.length}
+            </h2>
+            <p>
+                <em>Loại: {current.type}</em>
+            </p>
             {renderQuestion()}
             <hr />
-            <p>✅ Đúng: {correctCount} | ❌ Sai: {incorrectCount}</p>
+            <p>
+                ✅ Đúng: {correctCount} | ❌ Sai: {incorrectCount}
+            </p>
         </div>
     );
 };

@@ -23,6 +23,7 @@ const MyLibrary: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [flippedCardIds, setFlippedCardIds] = useState<Set<number>>(new Set());
+    const [userData, setUserData] = useState<User | null>(null);
 
     const navigate = useNavigate();
 
@@ -33,17 +34,13 @@ const MyLibrary: React.FC = () => {
             navigate("/login");
             return;
         }
+        const user = JSON.parse(storedUser);
+        setUserData(user);
     }, [navigate]);
 
     // Lấy danh sách từ đã lưu
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (!storedUser) {
-            setError("Không tìm thấy thông tin người dùng");
-            setLoading(false);
-            return;
-        }
-        const userData: User = JSON.parse(storedUser);
+        if (!userData) return;
         axios
             .get("http://localhost:8080/vocabulary/myLibrary", {
                 params: { userID: userData.userID }
@@ -57,20 +54,14 @@ const MyLibrary: React.FC = () => {
                 setError("Không thể tải danh sách từ vựng đã lưu.");
                 setLoading(false);
             });
-    }, []);
+    }, [userData]);
 
-    // Lật flashcard
     const handleFlip = (vocabularyID: number) => {
         const newSet = new Set(flippedCardIds);
-        if (newSet.has(vocabularyID)) {
-            newSet.delete(vocabularyID);
-        } else {
-            newSet.add(vocabularyID);
-        }
+        newSet.has(vocabularyID) ? newSet.delete(vocabularyID) : newSet.add(vocabularyID);
         setFlippedCardIds(newSet);
     };
 
-    // Đọc từ
     const handleSpeak = (word: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if ('speechSynthesis' in window) {
@@ -82,7 +73,30 @@ const MyLibrary: React.FC = () => {
         }
     };
 
-    // Điều hướng sang quiz
+    const handleDelete = (vocabularyID: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!userData) return;
+
+        const confirmed = window.confirm("Bạn có chắc chắn muốn xoá từ này khỏi thư viện?");
+        if (!confirmed) return;
+
+        axios
+            .delete("http://localhost:8080/vocabulary/library", {
+                params: {
+                    userID: userData.userID,
+                    vocabularyID: vocabularyID
+                }
+            })
+            .then(() => {
+                // Cập nhật lại danh sách sau khi xoá
+                setVocabularies(prev => prev.filter(v => v.vocabularyID !== vocabularyID));
+            })
+            .catch(err => {
+                console.error("Lỗi khi xoá từ:", err);
+                alert("Không thể xoá từ này khỏi thư viện.");
+            });
+    };
+
     const handleQuizClick = () => {
         navigate("/quiz/mylibrary");
     };
@@ -121,12 +135,20 @@ const MyLibrary: React.FC = () => {
                                         alt={vocab.word}
                                         className="flashcard-image"
                                     />
-                                    <button
-                                        onClick={(e) => handleSpeak(vocab.word, e)}
-                                        className="speak-button"
-                                    >
-                                        Read
-                                    </button>
+                                    <div className="button-group">
+                                        <button
+                                            onClick={(e) => handleSpeak(vocab.word, e)}
+                                            className="speak-button"
+                                        >
+                                            Read
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDelete(vocab.vocabularyID, e)}
+                                            className="speak-button"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

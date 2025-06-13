@@ -1,0 +1,69 @@
+.mini-game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(to right, #e0f7fa, #f1f8ff);
+    padding: 20px;
+}
+
+.mini-game-box {
+    background-color: white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.question-header {
+    font-size: 1.5em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.question-text {
+    font-size: 1.2em;
+    margin-bottom: 20px;
+    color: #222;
+}
+
+.answer-input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.submit-button {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submit-button:hover {
+    background-color: #45a049;
+}
+
+.status-info {
+    margin-top: 20px;
+    font-size: 0.95em;
+    color: #444;
+}
+
+.game-over {
+    font-size: 1.2em;
+}
+
+.loading {
+    font-size: 1.2em;
+    color: #555;
+}

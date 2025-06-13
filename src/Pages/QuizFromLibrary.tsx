@@ -8,6 +8,18 @@ interface Question {
     type: string;
 }
 
+function getUserIDFromLocalStorage(): number | null {
+    const userString = localStorage.getItem("user");
+    if (!userString) return null;
+
+    try {
+        const user = JSON.parse(userString);
+        return user.userID ?? null;
+    } catch {
+        return null;
+    }
+}
+
 const QuizFromLibrary: React.FC = () => {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -16,60 +28,70 @@ const QuizFromLibrary: React.FC = () => {
     const [incorrectCount, setIncorrectCount] = useState(0);
     const [finished, setFinished] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const userID = getUserIDFromLocalStorage();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (!storedUser) {
-            alert("Chưa đăng nhập hoặc không có user trong localStorage");
+        if (!userID) {
+            setError("Bạn chưa đăng nhập hoặc thiếu userID.");
             setLoading(false);
             return;
         }
 
-        try {
-            const userObj = JSON.parse(storedUser);
-            if (!userObj.userID) {
-                alert("Chưa có userID trong thông tin user");
+        axios
+            .get(`http://localhost:8080/question/fromLibrary?userID=${userID}`)
+            .then((res) => {
+                setQuestions(res.data);
                 setLoading(false);
-                return;
-            }
-
-            // Gọi API backend lấy câu hỏi theo userID
-            axios
-                .get(`http://localhost:8080/question/fromLibrary?userID=${userObj.userID}`)
-                .then((res) => {
-                    setQuestions(res.data);
-                    setLoading(false);
-                })
-                .catch((err) => {
-                    console.error("Lỗi khi lấy câu hỏi:", err);
-                    setLoading(false);
-                });
-        } catch (error) {
-            alert("Dữ liệu user không hợp lệ");
-            setLoading(false);
-        }
-    }, []);
+            })
+            .catch((err) => {
+                console.error("Lỗi khi lấy câu hỏi:", err);
+                setError("Không thể tải câu hỏi từ thư viện.");
+                setLoading(false);
+            });
+    }, [userID]);
 
     const handleSubmit = (answer: string) => {
+        if (!userID) return;
+
         const current = questions[currentIndex];
 
-        const cleanedAnswer = answer.trim().toLowerCase().replace(/[.,!?]$/, "");
-        const cleanedCorrect = current.correctAnswer.trim().toLowerCase();
+        axios
+            .post(`http://localhost:8080/question/checkAnswer`, null, {
+                params: {
+                    userID,
+                    questionID: current.questionID,
+                    userAnswer: answer.trim(),
+                },
+            })
+            .then((res) => {
+                const isCorrect = res.data === "correct";
 
-        const isCorrect = cleanedAnswer === cleanedCorrect;
+                if (isCorrect) setCorrectCount((c) => c + 1);
+                else setIncorrectCount((c) => c + 1);
 
-        if (isCorrect) setCorrectCount((c) => c + 1);
-        else setIncorrectCount((c) => c + 1);
+                if (currentIndex + 1 < questions.length) {
+                    setCurrentIndex((i) => i + 1);
+                    setUserAnswer("");
+                } else {
+                    setFinished(true);
+                }
+            })
+            .catch((err) => {
+                console.error("Lỗi kiểm tra đáp án:", err);
+                alert("Lỗi kiểm tra đáp án, vui lòng thử lại.");
+            });
+    };
 
-        if (currentIndex + 1 < questions.length) {
-            setCurrentIndex((i) => i + 1);
-            setUserAnswer("");
-        } else {
-            setFinished(true);
-        }
+    const handleListen = (text: string) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-US";
+        speechSynthesis.speak(utterance);
     };
 
     if (loading) return <p>Đang tải câu hỏi...</p>;
+    if (error) return <p>{error}</p>;
     if (questions.length === 0) return <p>Không có câu hỏi nào.</p>;
     if (finished) {
         return (
@@ -83,6 +105,66 @@ const QuizFromLibrary: React.FC = () => {
 
     const current = questions[currentIndex];
 
+    const renderQuestion = () => {
+        switch (current.type) {
+            case "VI_TO_EN":
+            case "FILL_IN_THE_BLANK":
+                return (
+                    <>
+                        <p>
+                            <strong>{current.questionText}</strong>
+                        </p>
+                        <input
+                            type="text"
+                            value={userAnswer}
+                            onChange={(e) => setUserAnswer(e.target.value)}
+                        />
+                        <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
+                    </>
+                );
+
+            case "LISTEN_AND_WRITE":
+                return (
+                    <>
+                        <p>
+                            <strong>Nghe và viết từ:</strong>
+                        </p>
+                        <button onClick={() => handleListen(current.correctAnswer)}>
+                            🔊 Nghe
+                        </button>
+                        <input
+                            type="text"
+                            value={userAnswer}
+                            onChange={(e) => setUserAnswer(e.target.value)}
+                        />
+                        <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
+                    </>
+                );
+
+            case "PRONUNCIATION":
+                return (
+                    <>
+                        <p>
+                            <strong>Phát âm đúng từ sau:</strong> {current.questionText}
+                        </p>
+                        <button onClick={() => handleListen(current.correctAnswer)}>
+                            🔊 Nghe lại từ
+                        </button>
+                        <input
+                            type="text"
+                            value={userAnswer}
+                            onChange={(e) => setUserAnswer(e.target.value)}
+                            placeholder="Nhập phát âm bạn nghe được"
+                        />
+                        <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
+                    </>
+                );
+
+            default:
+                return <p>Loại câu hỏi không được hỗ trợ.</p>;
+        }
+    };
+
     return (
         <div className="quiz-page">
             <h2>
@@ -91,15 +173,7 @@ const QuizFromLibrary: React.FC = () => {
             <p>
                 <em>Loại: {current.type}</em>
             </p>
-            <p>
-                <strong>{current.questionText}</strong>
-            </p>
-            <input
-                type="text"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-            />
-            <button onClick={() => handleSubmit(userAnswer)}>Trả lời</button>
+            {renderQuestion()}
             <hr />
             <p>
                 ✅ Đúng: {correctCount} | ❌ Sai: {incorrectCount}
